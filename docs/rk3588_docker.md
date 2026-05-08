@@ -17,7 +17,7 @@
 工作流：
 
 - `Build and publish RK3588 FFmpeg image`
-- `Build and publish RK3588 image`
+- `Build backend images`，手动触发时选择 `target=rk`
 
 推荐顺序：
 1. 先构建 FFmpeg 基础镜像
@@ -42,15 +42,15 @@
 ### 业务镜像
 
 参数：
-1. `dockerfile`：默认 `Dockerfile.rk`
-2. `tag`：镜像标签，默认 `rk`
-3. `torch_whl`：可选。用于指定 aarch64 版 PyTorch wheel 的 URL 或路径。留空则跳过安装。
-4. `onnxruntime_whl`：可选。用于指定 aarch64 版 ONNX Runtime wheel 的 URL 或路径。留空则跳过安装。
-5. `rknn_toolkit_lite2_whl`：可选。用于指定 `rknn-toolkit-lite2` 的 aarch64 wheel URL 或路径。留空时会回退到仓库内的 `vendor/rknn_wheels/rknn_toolkit_lite2-*.whl`。
-6. `ffmpeg_rk_image`：可选。用于指定 FFmpeg 基础镜像。留空时，workflow 会自动使用 `ghcr.io/<repo_owner>/video-ba-pipe-ffmpeg-rk:rkmpp`。
+1. `target`：选择 `rk`，或选择 `all` 同时构建 CPU/CUDA/RK 后端镜像。
+2. `torch_whl`：可选。用于指定 aarch64 版 PyTorch wheel 的 URL 或路径。留空则跳过安装。
+3. `onnxruntime_whl`：可选。用于指定 aarch64 版 ONNX Runtime wheel 的 URL 或路径。留空则跳过安装。
+4. `rknn_toolkit_lite2_whl`：可选。用于指定 `rknn-toolkit-lite2` 的 aarch64 wheel URL 或路径。留空时会回退到仓库内的 `vendor/rknn_wheels/rknn_toolkit_lite2-*.whl`。
+5. `ffmpeg_rk_image`：可选。用于指定 FFmpeg 基础镜像。留空时，workflow 会自动使用 `ghcr.io/<repo_owner>/video-ba-pipe-ffmpeg-rk:rkmpp`。
 
 说明：
 - 该 workflow 只构建 `linux/arm64` 镜像。
+- workflow 固定使用 `Dockerfile.rk`，并推送 `rk` 和 `rk-<commit>` 两个 tag。
 - 需要 NPU 运行时库请在运行时挂载（见下文）。
 - `Dockerfile.rk` 不再自行处理 FFmpeg 包，而是通过 `COPY --from=${FFMPEG_RK_IMAGE}` 获取 `/opt/ffmpeg`。
 - `Dockerfile.rk` 内置默认值为本地镜像名 `video-ba-pipe-ffmpeg-rk:rkmpp`，便于离线/本地联调；GitHub Actions 会在构建时自动覆盖为当前仓库 owner 对应的 GHCR 镜像。
