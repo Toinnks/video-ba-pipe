@@ -7,6 +7,8 @@
 
 板端部署与网络问题处理请参考：`docs/rk_usage_manual.md`
 
+通用 Docker 镜像构建入口、x86/RK 构建维度说明请参考：`docs/docker_build_workflows.md`
+
 数据库说明：
 - RK compose 已内置 PostgreSQL 服务。
 - 应用容器通过 `DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD` 连接数据库。

@@ -132,6 +132,7 @@ cp env.example .env
 
 ## 相关文档
 
+- Docker 镜像构建说明：`docs/docker_build_workflows.md`
 - RK3588 镜像与构建说明：`docs/rk3588_docker.md`
 - RK3588 板端部署/排障：`docs/rk_usage_manual.md`
 - RabbitMQ 消息格式与接入：`docs/rabbitmq_integration.md`
