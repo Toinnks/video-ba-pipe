@@ -11,8 +11,8 @@ on:
       - ".github/workflows/build_backend_images.yml"
   workflow_dispatch:
     inputs:
-      target:
-        description: "Image target to build"
+      runtime:
+        description: "Backend runtime to build"
         required: true
         default: "cpu"
         type: choice
@@ -50,7 +50,7 @@ jobs:
   build-cpu:
     name: CPU image (linux/amd64)
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || inputs.target == 'cpu' || inputs.target == 'all'
+    if: github.event_name == 'push' || inputs.runtime == 'cpu' || inputs.runtime == 'all'
     permissions:
       contents: read
       packages: write
@@ -86,7 +86,7 @@ jobs:
   build-cuda:
     name: CUDA image (linux/amd64)
     runs-on: ubuntu-latest
-    if: inputs.target == 'cuda' || inputs.target == 'all'
+    if: inputs.runtime == 'cuda' || inputs.runtime == 'all'
     permissions:
       contents: read
       packages: write
@@ -122,7 +122,7 @@ jobs:
   build-rk:
     name: RK3588 image (linux/arm64)
     runs-on: ubuntu-latest
-    if: inputs.target == 'rk' || inputs.target == 'all'
+    if: inputs.runtime == 'rk' || inputs.runtime == 'all'
     permissions:
       contents: read
       packages: write

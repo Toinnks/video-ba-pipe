@@ -8,14 +8,14 @@ on:
       - ".github/workflows/build_frontend_images.yml"
   workflow_dispatch:
     inputs:
-      target:
-        description: "Image target to build"
+      platform:
+        description: "Frontend platform to build"
         required: true
-        default: "amd64"
+        default: "linux/amd64"
         type: choice
         options:
-          - amd64
-          - rk
+          - linux/amd64
+          - linux/arm64
           - all
 
 env:
@@ -26,7 +26,7 @@ jobs:
   build-amd64:
     name: Frontend image (linux/amd64)
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || inputs.target == 'amd64' || inputs.target == 'all'
+    if: github.event_name == 'push' || inputs.platform == 'linux/amd64' || inputs.platform == 'all'
     permissions:
       contents: read
       packages: write
@@ -60,9 +60,9 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
 
   build-rk:
-    name: Frontend RK3588 image (linux/arm64)
+    name: Frontend image (linux/arm64, RK tag)
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || inputs.target == 'rk' || inputs.target == 'all'
+    if: github.event_name == 'push' || inputs.platform == 'linux/arm64' || inputs.platform == 'all'
     permissions:
       contents: read
       packages: write

@@ -17,7 +17,7 @@
 工作流：
 
 - `Build and publish RK3588 FFmpeg image`
-- `Build backend images`，手动触发时选择 `target=rk`
+- `Build backend images`，手动触发时选择 `runtime=rk`
 
 推荐顺序：
 1. 先构建 FFmpeg 基础镜像
@@ -42,7 +42,7 @@
 ### 业务镜像
 
 参数：
-1. `target`：选择 `rk`，或选择 `all` 同时构建 CPU/CUDA/RK 后端镜像。
+1. `runtime`：选择 `rk`，或选择 `all` 同时构建 CPU/CUDA/RK 后端镜像。
 2. `torch_whl`：可选。用于指定 aarch64 版 PyTorch wheel 的 URL 或路径。留空则跳过安装。
 3. `onnxruntime_whl`：可选。用于指定 aarch64 版 ONNX Runtime wheel 的 URL 或路径。留空则跳过安装。
 4. `rknn_toolkit_lite2_whl`：可选。用于指定 `rknn-toolkit-lite2` 的 aarch64 wheel URL 或路径。留空时会回退到仓库内的 `vendor/rknn_wheels/rknn_toolkit_lite2-*.whl`。
