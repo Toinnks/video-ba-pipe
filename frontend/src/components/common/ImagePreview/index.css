@@ -29,9 +29,6 @@
   animation: fadeIn 0.3s ease-out;
 }
 
-.preview-image.loading {
-  opacity: 0;
-}
 
 @keyframes fadeIn {
   from {

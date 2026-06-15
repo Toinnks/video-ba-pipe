@@ -231,7 +231,8 @@ class SourceWorkflowHost:
             raise last_error
 
         shm_name = self.source.analysis_buffer_name if os.name == 'nt' else f"/{self.source.analysis_buffer_name}"
-        resource_tracker.unregister(shm_name, 'shared_memory')
+        if os.name != 'nt':
+            resource_tracker.unregister(shm_name, 'shared_memory')
 
     def _setup_executors(self):
         workflows = self._load_workflows()

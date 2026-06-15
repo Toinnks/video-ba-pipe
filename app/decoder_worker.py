@@ -6,6 +6,8 @@ import sys
 import time
 from multiprocessing import resource_tracker
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from app import logger
 from app.config import (
     SNAPSHOT_ENABLED,
@@ -137,7 +139,8 @@ class DecoderWorker:
 
             # 注销资源跟踪器(避免进程退出时的警告)
             shm_name = self.analysis_buffer_name if os.name == 'nt' else f"/{self.analysis_buffer_name}"
-            resource_tracker.unregister(shm_name, 'shared_memory')
+            if os.name != 'nt':
+                resource_tracker.unregister(shm_name, 'shared_memory')
 
             if self.recording_buffer_name:
                 self.recording_buffer = CompressedVideoRingBuffer(
@@ -158,7 +161,8 @@ class DecoderWorker:
                     f"pixel_format={self.recording_buffer.pixel_format})"
                 )
                 shm_name = self.recording_buffer_name if os.name == 'nt' else f"/{self.recording_buffer_name}"
-                resource_tracker.unregister(shm_name, 'shared_memory')
+                if os.name != 'nt':
+                    resource_tracker.unregister(shm_name, 'shared_memory')
 
             # 使用工厂创建合适的 Streamer
             stream_type = self.stream_config.get('type')
@@ -367,7 +371,7 @@ class DecoderWorker:
                                     f"录制缓冲区写入失败，已跳过当前帧: {recording_error}"
                                 )
 
-                        if frame_count % 100 == 0 and wrote_analysis:
+                        if (frame_count == 1 or frame_count % 100 == 0) and wrote_analysis:
                             logger.info(
                                 f"已解码 {frame_count} 帧, "
                                 f"分析写入 {analysis_written_count} 帧, "

@@ -10,6 +10,7 @@ import {
   createVideoSource,
   updateVideoSource,
   deleteVideoSource,
+  captureFrame,
 } from '@/services/api';
 import { PageHeader, ImagePreview } from '@/components/common';
 import SourceForm from './components/SourceForm';
@@ -25,6 +26,7 @@ export default function VideoSources() {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [editingSource, setEditingSource] = useState<any>(null);
   const [previewSource, setPreviewSource] = useState<any>(null);
+  const [previewSrc, setPreviewSrc] = useState<string>('');
 
   const loadSources = useCallback(async () => {
     setLoading(true);
@@ -93,9 +95,16 @@ export default function VideoSources() {
     }
   };
 
-  const handlePreview = (source: any) => {
+  const handlePreview = async (source: any) => {
     setPreviewSource(source);
+    setPreviewSrc('');
     setPreviewVisible(true);
+    try {
+      const res = await captureFrame(source.id);
+      setPreviewSrc(res.image);
+    } catch (e) {
+      setPreviewSrc('error');
+    }
   };
 
   return (
@@ -152,7 +161,7 @@ export default function VideoSources() {
 
       <ImagePreview
         visible={previewVisible}
-        src={`/api/image/snapshots/${previewSource?.source_code}.jpg`}
+        src={previewSrc}
         title={previewSource?.name}
         onClose={() => setPreviewVisible(false)}
       />

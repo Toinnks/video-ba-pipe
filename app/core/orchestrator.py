@@ -1,7 +1,12 @@
+import os
 import signal
 import subprocess
+import sys
 import threading
 import time
+
+# app/ 目录的绝对路径（orchestrator 在 app/core/ 下，向上两级即 app/）
+_APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 from app import logger
 from app.config import (
@@ -298,7 +303,7 @@ class Orchestrator:
         # 启动解码器进程
         import sys
         decoder_args = [
-            sys.executable, 'decoder_worker.py',
+            sys.executable, os.path.join(_APP_DIR, 'decoder_worker.py'),
             '--url', source.source_url,
             '--source-id', str(source.id),
             '--decoder-type', VIDEO_DECODER_TYPE,
@@ -439,20 +444,22 @@ class Orchestrator:
             f"workflows={[workflow.id for workflow in workflows]}"
         )
 
-        import sys
         workflow_args = [
-            sys.executable, '-u', 'source_workflow_host.py',
+            sys.executable, '-u', os.path.join(_APP_DIR, 'source_workflow_host.py'),
             '--source-id', str(source_id)
         ]
         logger.debug(f"启动命令: {' '.join(workflow_args)}")
 
         try:
+            child_env = {**os.environ, 'PYTHONIOENCODING': 'utf-8'}
             workflow_p = subprocess.Popen(
                 workflow_args,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                universal_newlines=True,
-                bufsize=1
+                encoding='utf-8',
+                errors='replace',
+                bufsize=1,
+                env=child_env,
             )
 
             # 启动输出读取线程

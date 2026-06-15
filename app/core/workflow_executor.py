@@ -764,7 +764,8 @@ class WorkflowExecutor:
                     raise
 
         shm_name = analysis_buffer_name if os.name == 'nt' else f"/{analysis_buffer_name}"
-        resource_tracker.unregister(shm_name, 'shared_memory')
+        if os.name != 'nt':
+            resource_tracker.unregister(shm_name, 'shared_memory')
 
         if RECORDING_ENABLED:
             recording_buffer_name = self.video_source.recording_buffer_name
@@ -781,7 +782,8 @@ class WorkflowExecutor:
                     jpeg_quality=RECORDING_JPEG_QUALITY,
                 )
                 shm_name = recording_buffer_name if os.name == 'nt' else f"/{recording_buffer_name}"
-                resource_tracker.unregister(shm_name, 'shared_memory')
+                if os.name != 'nt':
+                    resource_tracker.unregister(shm_name, 'shared_memory')
                 logger.info(
                     f"已连接录制缓冲区: {recording_buffer_name} "
                     f"(compressed jpeg, fps={RECORDING_FPS}, duration={RECORDING_BUFFER_DURATION}s, "

@@ -17,15 +17,16 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({
   title,
   onClose,
 }) => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     if (visible) {
-      setLoading(true);
-      setError(false);
+      setImgError(false);
     }
   }, [visible, src]);
+
+  const isError = src === 'error' || imgError;
+  const isLoading = !src && !isError;
 
   return (
     <Modal
@@ -45,30 +46,24 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({
       <div className="preview-container">
         {title && <div className="preview-title">{title}</div>}
         <div className="preview-image-wrapper">
-          {error ? (
+          {isError ? (
             <div className="preview-error">
               <div className="error-icon">⚠</div>
               <div className="error-text">无法加载预览图片</div>
+            </div>
+          ) : isLoading ? (
+            <div className="preview-loading">
+              <div className="loading-spinner" />
+              <div className="loading-text">加载中...</div>
             </div>
           ) : (
             <Image
               src={src}
               alt={alt}
-              className={`preview-image ${loading ? 'loading' : ''}`}
-              style={{ display: loading ? 'none' : 'block' }}
+              className="preview-image"
               preview={false}
-              onLoad={() => setLoading(false)}
-              onError={() => {
-                setLoading(false);
-                setError(true);
-              }}
+              onError={() => setImgError(true)}
             />
-          )}
-          {loading && !error && (
-            <div className="preview-loading">
-              <div className="loading-spinner" />
-              <div className="loading-text">加载中...</div>
-            </div>
           )}
         </div>
       </div>

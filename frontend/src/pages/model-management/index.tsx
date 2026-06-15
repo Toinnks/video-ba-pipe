@@ -4,7 +4,7 @@ import {
   PlusOutlined,
   ApiOutlined,
 } from '@ant-design/icons';
-import { getModels, getModelTypes, getModelFrameworks } from '@/services/api';
+import { getModels, getModelTypes, getModelFrameworks, deleteModel } from '@/services/api';
 import { PageHeader } from '@/components/common';
 import ModelCard from './components/ModelCard';
 import FilterBar from './components/FilterBar';
@@ -125,6 +125,7 @@ const ModelsPage: React.FC = () => {
   // 处理删除
   const handleDelete = async (id: number) => {
     try {
+      await deleteModel(id);
       message.success('模型删除成功');
       loadModels();
       loadFilterOptions();
