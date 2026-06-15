@@ -48,11 +48,16 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Lowercase owner name
+        run: echo "REPO_OWNER=${REPO_OWNER,,}" >> "$GITHUB_ENV"
+        env:
+          REPO_OWNER: ${{ github.repository_owner }}
+
       - name: Extract metadata (tags, labels) for FFmpeg image
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ github.event.inputs.image_name }}
+          images: ${{ env.REGISTRY }}/${{ env.REPO_OWNER }}/${{ github.event.inputs.image_name }}
           tags: |
             type=raw,value=${{ github.event.inputs.tag }}
             type=sha,prefix=sha-
