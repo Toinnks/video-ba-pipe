@@ -91,3 +91,78 @@ def test_workflow_executor_run_once_uses_configured_pixel_format(monkeypatch):
     assert captured["frame_height"] == 9
     assert captured["frame_pixel_format"] == "rgb24"
     assert captured["frame"].shape == (9, 11, 3)
+
+
+def test_browser_video_writer_uses_h264_yuv420p_faststart(monkeypatch):
+    from app.core.video_recorder import FfmpegBrowserVideoWriter
+    import app.core.video_recorder as video_recorder_module
+
+    captured = {}
+
+    class _FakeStream:
+        def __init__(self):
+            self.closed = False
+            self.payload = b""
+
+        def write(self, payload):
+            self.payload += payload
+
+        def close(self):
+            self.closed = True
+
+        def read(self):
+            return b""
+
+    class _FakeProcess:
+        def __init__(self, cmd, stdin=None, stdout=None, stderr=None):
+            captured["cmd"] = cmd
+            captured["stdin_arg"] = stdin
+            captured["stdout_arg"] = stdout
+            captured["stderr_arg"] = stderr
+            self.stdin = _FakeStream()
+            self.stderr = _FakeStream()
+
+        def poll(self):
+            return None
+
+        def wait(self, timeout=None):
+            captured["wait_timeout"] = timeout
+            return 0
+
+    monkeypatch.setattr(video_recorder_module.subprocess, "Popen", _FakeProcess)
+
+    writer = FfmpegBrowserVideoWriter("/tmp/alert.mp4", fps=10, width=17, height=15)
+    writer.write(np.zeros((15, 17, 3), dtype=np.uint8))
+    writer.release()
+
+    cmd = captured["cmd"]
+    assert cmd[0] == "ffmpeg"
+    assert "libx264" in cmd
+    assert "yuv420p" in cmd
+    assert "+faststart" in cmd
+    assert "pad=ceil(iw/2)*2:ceil(ih/2)*2" in cmd
+    assert cmd[-1] == "/tmp/alert.mp4"
+    assert captured["wait_timeout"] == 30
+
+
+def test_video_recorder_does_not_fallback_to_opencv_writer(monkeypatch):
+    import app.core.video_recorder as video_recorder_module
+
+    recorder = VideoRecorder(buffer=SimpleNamespace(pixel_format="rgb24"), save_dir="/tmp")
+
+    def fail_ffmpeg(*args, **kwargs):
+        raise FileNotFoundError("ffmpeg")
+
+    def fail_if_opencv_writer_is_used(*args, **kwargs):
+        raise AssertionError("OpenCV VideoWriter should not be used for alert recording")
+
+    monkeypatch.setattr(video_recorder_module, "FfmpegBrowserVideoWriter", fail_ffmpeg)
+    monkeypatch.setattr(video_recorder_module, "require_cv2", lambda: None)
+    monkeypatch.setattr(
+        video_recorder_module,
+        "cv2",
+        SimpleNamespace(VideoWriter=fail_if_opencv_writer_is_used),
+    )
+
+    frame_rgb = np.zeros((12, 16, 3), dtype=np.uint8)
+    assert recorder._open_video_writer(frame_rgb, "/tmp/alert.mp4") is None

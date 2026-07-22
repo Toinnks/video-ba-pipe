@@ -1233,7 +1233,7 @@ def get_video(file_path):
                 data = f.read()
             
             response = Response(data, 200, mimetype=mime_type)
-            response.headers.add('Content-Length', str(file_size))
+            response.headers['Content-Length'] = str(file_size)
             response.headers.add('Accept-Ranges', 'bytes')
             return response
         
@@ -1261,7 +1261,7 @@ def get_video(file_path):
         response = Response(data, 206, mimetype=mime_type)
         response.headers.add('Content-Range', f'bytes {start}-{end}/{file_size}')
         response.headers.add('Accept-Ranges', 'bytes')
-        response.headers.add('Content-Length', str(content_length))
+        response.headers['Content-Length'] = str(content_length)
         response.headers.add('Cache-Control', 'no-cache')
         
         return response
@@ -1296,7 +1296,7 @@ def detect_stream_info():
                     '-show_streams',
                     '-select_streams', 'v:0',
                     '-rtsp_transport', 'tcp',  # 使用TCP传输
-                    '-timeout', '5000000',   # 5秒超时（微秒）
+                    '-rw_timeout', '5000000',   # 5秒超时（微秒）
                     '-analyzeduration', '2000000',  # 分析时长2秒
                     '-probesize', '2000000',  # 探测大小2MB
                     url

@@ -4,6 +4,7 @@
 支持录制预警前N秒和后M秒的视频
 """
 import os
+import subprocess
 import threading
 import time
 from typing import List, Tuple, Optional
@@ -17,6 +18,87 @@ from app.core.frame_utils import (
     infer_frame_dimensions,
 )
 from app.core.ringbuffer import VideoRingBuffer
+
+
+class FfmpegBrowserVideoWriter:
+    """Write browser-compatible MP4 directly to the final output path."""
+
+    def __init__(self, output_path: str, fps: int, width: int, height: int):
+        self.output_path = output_path
+        self.fps = fps
+        self.width = width
+        self.height = height
+        self.process = None
+        self._closed = False
+        self._open()
+
+    def _open(self):
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "bgr24",
+            "-s",
+            f"{self.width}x{self.height}",
+            "-r",
+            str(self.fps),
+            "-i",
+            "pipe:0",
+            "-vf",
+            "pad=ceil(iw/2)*2:ceil(ih/2)*2",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "veryfast",
+            "-pix_fmt",
+            "yuv420p",
+            "-movflags",
+            "+faststart",
+            "-an",
+            self.output_path,
+        ]
+        self.process = subprocess.Popen(
+            cmd,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+        )
+
+    def isOpened(self):
+        return self.process is not None and self.process.poll() is None and self.process.stdin is not None
+
+    def write(self, frame_bgr: np.ndarray):
+        if not self.isOpened():
+            raise RuntimeError("ffmpeg video writer is not open")
+
+        if frame_bgr.shape[:2] != (self.height, self.width):
+            require_cv2()
+            frame_bgr = cv2.resize(frame_bgr, (self.width, self.height), interpolation=cv2.INTER_LINEAR)
+
+        frame_bgr = np.ascontiguousarray(frame_bgr, dtype=np.uint8)
+        self.process.stdin.write(frame_bgr.tobytes())
+
+    def release(self):
+        if self._closed:
+            return
+        self._closed = True
+
+        try:
+            if self.process and self.process.stdin:
+                self.process.stdin.close()
+            if self.process:
+                return_code = self.process.wait(timeout=30)
+                stderr = self.process.stderr.read() if self.process.stderr else b""
+                if return_code != 0:
+                    message = stderr.decode("utf-8", errors="replace").strip()
+                    raise RuntimeError(f"ffmpeg exited with code {return_code}: {message}")
+        finally:
+            self.process = None
 
 
 class VideoRecorder:
@@ -253,7 +335,7 @@ class VideoRecorder:
                 pass
 
     def _open_video_writer(self, first_frame: np.ndarray, output_path: str):
-        """基于首帧创建视频写入器。"""
+        """Create an ffmpeg writer that emits browser-compatible MP4."""
         require_cv2()
         pixel_format = self._get_frame_pixel_format(first_frame)
         width, height = infer_frame_dimensions(
@@ -261,30 +343,26 @@ class VideoRecorder:
             pixel_format=pixel_format,
         )
 
-        fourcc_options = [
-            'avc1',
-            'H264',
-            'X264',
-            'mp4v',
-        ]
-
-        for fourcc_str in fourcc_options:
-            try:
-                fourcc = cv2.VideoWriter_fourcc(*fourcc_str)
-                video_writer = cv2.VideoWriter(
-                    output_path,
-                    fourcc,
-                    self.fps,
-                    (width, height)
+        try:
+            video_writer = FfmpegBrowserVideoWriter(
+                output_path=output_path,
+                fps=self.fps,
+                width=width,
+                height=height,
+            )
+            if video_writer.isOpened():
+                logger.info(
+                    "using ffmpeg/libx264 browser-compatible MP4 writer: "
+                    f"pix_fmt=yuv420p, movflags=+faststart, path={output_path}"
                 )
-                if video_writer.isOpened():
-                    logger.info(f"使用编码器: {fourcc_str}")
-                    return video_writer
-                video_writer.release()
-            except Exception as exc:
-                logger.debug(f"编码器 {fourcc_str} 不可用: {exc}")
+                return video_writer
+            video_writer.release()
+            logger.error("ffmpeg browser-compatible writer exited before accepting frames")
+        except FileNotFoundError:
+            logger.error("ffmpeg not found; cannot record browser-compatible MP4")
+        except Exception as exc:
+            logger.error(f"ffmpeg browser-compatible writer unavailable: {exc}", exc_info=True)
 
-        logger.error(f"无法创建视频写入器: {output_path} (尝试了所有编码器)")
         return None
 
     def _write_frame(self, video_writer, frame: np.ndarray) -> bool:
