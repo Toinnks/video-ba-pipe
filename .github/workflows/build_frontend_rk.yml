@@ -22,6 +22,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Normalize image name
+        id: image
+        run: echo "name=${GITHUB_REPOSITORY,,}-frontend" >> "$GITHUB_OUTPUT"
 
       - name: Log in to the Container registry
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
@@ -49,5 +52,5 @@ jobs:
             TARGETPLATFORM=linux/arm64
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:rk
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:rk-${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:rk
+            ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:rk-${{ github.sha }}

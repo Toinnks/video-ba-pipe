@@ -48,6 +48,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Normalize image names
+        id: image
+        run: |
+          echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to the Container registry
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
@@ -68,12 +73,12 @@ jobs:
         id: meta
         uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}
 
       - name: Build and push RK3588 image
         uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
         env:
-          DEFAULT_FFMPEG_RK_IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/video-ba-pipe-ffmpeg-rk:rkmpp
+          DEFAULT_FFMPEG_RK_IMAGE: ${{ env.REGISTRY }}/${{ steps.image.outputs.owner }}/video-ba-pipe-ffmpeg-rk:rkmpp
         with:
           context: .
           file: ./${{ github.event.inputs.dockerfile }}
@@ -85,5 +90,5 @@ jobs:
             ONNXRUNTIME_WHL=${{ github.event.inputs.onnxruntime_whl }}
             RKNN_TOOLKIT_LITE2_WHL=${{ github.event.inputs.rknn_toolkit_lite2_whl }}
             FFMPEG_RK_IMAGE=${{ github.event.inputs.ffmpeg_rk_image != '' && github.event.inputs.ffmpeg_rk_image || env.DEFAULT_FFMPEG_RK_IMAGE }}
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.tag }}
+          tags: ${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ github.event.inputs.tag }}
           labels: ${{ steps.meta.outputs.labels }}
